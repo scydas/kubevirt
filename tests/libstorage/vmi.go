@@ -17,22 +17,20 @@
  *
  */
 
-package libnet
+package libstorage
 
 import (
+	"fmt"
+
 	v1 "kubevirt.io/api/core/v1"
-
-	"kubevirt.io/kubevirt/pkg/libvmi"
-	libvmici "kubevirt.io/kubevirt/pkg/libvmi/cloudinit"
-
-	"kubevirt.io/kubevirt/tests/libnet/cloudinit"
 )
 
-func WithMasqueradeNetworking(ports ...v1.Port) libvmi.Option {
-	networkData := cloudinit.CreateDefaultCloudInitNetworkData()
-	return func(vmi *v1.VirtualMachineInstance) {
-		libvmi.WithInterface(libvmi.InterfaceDeviceWithMasqueradeBinding(ports...))(vmi)
-		libvmi.WithNetwork(v1.DefaultPodNetwork())(vmi)
-		libvmi.WithCloudInitNoCloud(libvmici.WithNoCloudNetworkData(networkData))(vmi)
+func LookupVolumeTargetPath(vmi *v1.VirtualMachineInstance, volumeName string) string {
+	for _, volStatus := range vmi.Status.VolumeStatus {
+		if volStatus.Name == volumeName {
+			return fmt.Sprintf("/dev/%s", volStatus.Target)
+		}
 	}
+
+	return ""
 }

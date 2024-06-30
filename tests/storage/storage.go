@@ -54,6 +54,7 @@ import (
 
 	hostdisk "kubevirt.io/kubevirt/pkg/host-disk"
 	"kubevirt.io/kubevirt/pkg/libvmi"
+	libvmici "kubevirt.io/kubevirt/pkg/libvmi/cloudinit"
 	"kubevirt.io/kubevirt/pkg/pointer"
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 	"kubevirt.io/kubevirt/pkg/virt-launcher/virtwrap/converter"
@@ -345,15 +346,22 @@ var _ = SIGDescribe("Storage", func() {
 
 				Expect(console.LoginToCirros(vmi)).To(Succeed())
 
-				By("Checking that /dev/vdc has a capacity of 1G, aligned to 4k")
+				var emptyDiskDevice string
+				Eventually(func() string {
+					vmi, err = virtClient.VirtualMachineInstance(vmi.Namespace).Get(context.Background(), vmi.Name, metav1.GetOptions{})
+					Expect(err).ToNot(HaveOccurred())
+					emptyDiskDevice = libstorage.LookupVolumeTargetPath(vmi, "emptydisk1")
+					return emptyDiskDevice
+				}, 30*time.Second, time.Second).ShouldNot(BeEmpty())
+				By("Checking that the corresponding device has a capacity of 1G, aligned to 4k")
 				Expect(console.SafeExpectBatch(vmi, []expect.Batcher{
-					&expect.BSnd{S: "sudo blockdev --getsize64 /dev/vdc\n"},
+					&expect.BSnd{S: fmt.Sprintf("sudo blockdev --getsize64 %s\n", emptyDiskDevice)},
 					&expect.BExp{R: "999292928"}, // 1G in bytes rounded down to nearest 1MiB boundary
 				}, 10)).To(Succeed())
 
-				By("Checking if we can write to /dev/vdc")
+				By("Checking if we can write to the corresponding device")
 				Expect(console.SafeExpectBatch(vmi, []expect.Batcher{
-					&expect.BSnd{S: "sudo mkfs.ext4 -F /dev/vdc\n"},
+					&expect.BSnd{S: fmt.Sprintf("sudo mkfs.ext4 -F %s\n", emptyDiskDevice)},
 					&expect.BExp{R: console.PromptExpression},
 					&expect.BSnd{S: console.EchoLastReturnValue},
 					&expect.BExp{R: console.RetValue("0")},
@@ -962,7 +970,7 @@ var _ = SIGDescribe("Storage", func() {
 				vmi = libvmi.New(
 					libvmi.WithResourceMemory("256Mi"),
 					libvmi.WithPersistentVolumeClaim("disk0", dataVolume.Name),
-					libvmi.WithCloudInitNoCloudEncodedUserData(cirrosUserData),
+					libvmi.WithCloudInitNoCloud(libvmici.WithNoCloudEncodedUserData(cirrosUserData)),
 				)
 				vmi = tests.RunVMIAndExpectLaunch(vmi, 90)
 
@@ -1395,18 +1403,13 @@ var _ = SIGDescribe("Storage", func() {
 				)
 				Expect(console.LoginToCirros(vmi)).To(Succeed())
 
-				lunDisk := "/dev/"
-				Eventually(func() bool {
+				var lunDisk string
+				Eventually(func() string {
 					vmi, err = virtClient.VirtualMachineInstance(vmi.Namespace).Get(context.Background(), vmi.Name, metav1.GetOptions{})
 					Expect(err).ToNot(HaveOccurred())
-					for _, volStatus := range vmi.Status.VolumeStatus {
-						if volStatus.Name == "lun0" {
-							lunDisk += volStatus.Target
-							return true
-						}
-					}
-					return false
-				}, 30*time.Second, time.Second).Should(BeTrue())
+					lunDisk = libstorage.LookupVolumeTargetPath(vmi, "lun0")
+					return lunDisk
+				}, 30*time.Second, time.Second).ShouldNot(BeEmpty())
 
 				By(fmt.Sprintf("Checking that %s has a capacity of 8Mi", lunDisk))
 				Expect(console.SafeExpectBatch(vmi, []expect.Batcher{
