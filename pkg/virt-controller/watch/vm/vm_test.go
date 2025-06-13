@@ -39,7 +39,6 @@ import (
 	cdiv1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	"kubevirt.io/kubevirt/pkg/apimachinery/patch"
-	"kubevirt.io/kubevirt/pkg/controller"
 	virtcontroller "kubevirt.io/kubevirt/pkg/controller"
 	controllertesting "kubevirt.io/kubevirt/pkg/controller/testing"
 	instancetypecontroller "kubevirt.io/kubevirt/pkg/instancetype/controller/vm"
@@ -51,6 +50,7 @@ import (
 	"kubevirt.io/kubevirt/pkg/virt-controller/watch/common"
 	watchtesting "kubevirt.io/kubevirt/pkg/virt-controller/watch/testing"
 	watchutil "kubevirt.io/kubevirt/pkg/virt-controller/watch/util"
+	"kubevirt.io/kubevirt/tests/framework/matcher"
 
 	gomegatypes "github.com/onsi/gomega/types"
 
@@ -4792,6 +4792,33 @@ var _ = Describe("VirtualMachine", func() {
 					expectedCpuLim.Add(*resourcesDelta)
 					Expect(vmi.Spec.Domain.Resources.Limits.Cpu().String()).To(Equal(expectedCpuLim.String()))
 				})
+
+				It("should raise RestartRequired condition for ARM64 VM", func() {
+					vm, _ := watchtesting.DefaultVirtualMachine(true)
+					vm.Spec.Template.Spec.Architecture = "arm64"
+					vm.Spec.Template.Spec.Domain.CPU = &v1.CPU{
+						Sockets:    2,
+						MaxSockets: 4,
+					}
+
+					vmi := controller.setupVMIFromVM(vm)
+					vmi, err := virtFakeClient.KubevirtV1().VirtualMachineInstances(vm.Namespace).Create(context.Background(), vmi, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					controller.vmiIndexer.Add(vmi)
+
+					vm.Spec.Template.Spec.Domain.CPU = &v1.CPU{
+						Sockets: 3,
+					}
+					addVirtualMachine(vm)
+					vm, err = virtFakeClient.KubevirtV1().VirtualMachines(vm.Namespace).Create(context.Background(), vm, metav1.CreateOptions{})
+					Expect(err).NotTo(HaveOccurred())
+
+					sanityExecute(vm)
+
+					vm, err = virtFakeClient.KubevirtV1().VirtualMachines(vm.Namespace).Get(context.Background(), vm.Name, metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					Expect(vm).To(matcher.HaveConditionTrue(v1.VirtualMachineRestartRequired))
+				})
 			})
 
 			Context("Memory", func() {
@@ -6165,7 +6192,6 @@ var _ = Describe("VirtualMachine", func() {
 				Expect(vmiList.Items).To(BeEmpty())
 			})
 		})
-
 	})
 	Context("syncConditions", func() {
 		var vm *v1.VirtualMachine
@@ -6241,6 +6267,14 @@ var _ = Describe("VirtualMachine", func() {
 				Name: name,
 			}
 		}
+		createCDRom := func(name string) v1.Disk {
+			return v1.Disk{
+				Name: name,
+				DiskDevice: v1.DiskDevice{
+					CDRom: &v1.CDRomTarget{},
+				},
+			}
+		}
 		DescribeTable("should be validated for volume updates", func(oldVols, newVols []v1.Volume, expectValid bool) {
 			oldVm, _ := watchtesting.DefaultVirtualMachine(true)
 			newVm := oldVm.DeepCopy()
@@ -6290,6 +6324,10 @@ var _ = Describe("VirtualMachine", func() {
 				createPVCVol("vol2", "test2", false)}, []v1.Disk{createDisk("vol2")}, []v1.Disk{createDisk("vol1"), createDisk("vol2")}, true),
 			Entry("for a removed hotpluggable pvc", []v1.Volume{createPVCVol("vol1", "test1", true)}, []v1.Volume{},
 				[]v1.Disk{createDisk("vol1")}, []v1.Disk{}, true),
+			Entry("cd-rom eject", []v1.Volume{createPVCVol("vol1", "test1", false), createPVCVol("vol2", "test2", true)}, []v1.Volume{createPVCVol("vol1", "test1", false)},
+				[]v1.Disk{createDisk("vol1"), createCDRom("vol2")}, []v1.Disk{createDisk("vol1"), createCDRom("vol2")}, true),
+			Entry("cd-rom inject", []v1.Volume{createPVCVol("vol1", "test1", false)}, []v1.Volume{createPVCVol("vol1", "test1", false), createPVCVol("vol2", "test2", true)},
+				[]v1.Disk{createDisk("vol1"), createCDRom("vol2")}, []v1.Disk{createDisk("vol1"), createCDRom("vol2")}, true),
 		)
 	})
 
@@ -6323,7 +6361,7 @@ var _ = Describe("VirtualMachine", func() {
 			vm.Spec.UpdateVolumesStrategy = pointer.P(v1.UpdateVolumesStrategyMigration)
 			syncVolumeMigration(vm, vmi)
 			Expect(vm.Status.VolumeUpdateState.VolumeMigrationState).To(Equal(expectedVolumeMigrationState))
-			Expect(controller.NewVirtualMachineConditionManager().HasConditionWithStatus(vm,
+			Expect(virtcontroller.NewVirtualMachineConditionManager().HasConditionWithStatus(vm,
 				v1.VirtualMachineManualRecoveryRequired, k8sv1.ConditionTrue)).To(Equal(expectCond))
 		},
 			Entry("without any volume migration in progress", libvmi.NewVirtualMachine(libvmi.New(), libvmistatus.WithVMStatus(libvmistatus.NewVMStatus(libvmistatus.WithVMVolumeUpdateState(&v1.VolumeUpdateState{})))), libvmi.New(), nil, false),

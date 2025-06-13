@@ -2228,10 +2228,10 @@ func (c *VirtualMachineController) isLauncherClientUnresponsive(vmi *v1.VirtualM
 			// use cached socket if we previously established a connection
 			socketFile = clientInfo.SocketFile
 		} else {
-			socketFile, err = cmdclient.FindSocketOnHost(vmi)
+			socketFile, err = cmdclient.FindSocket(vmi)
 			if err != nil {
 				// socket does not exist, but let's see if the pod is still there
-				if _, err = cmdclient.FindPodDirOnHost(vmi); err != nil {
+				if _, err = cmdclient.FindPodDirOnHost(vmi, cmdclient.SocketDirectoryOnHost); err != nil {
 					// no pod meanst that waiting for it to initialize makes no sense
 					return true, true, nil
 				}
@@ -2252,11 +2252,11 @@ func (c *VirtualMachineController) isLauncherClientUnresponsive(vmi *v1.VirtualM
 		}
 		c.launcherClients.Store(vmi.UID, clientInfo)
 		// attempt to find the socket if the established connection doesn't currently exist.
-		socketFile, err = cmdclient.FindSocketOnHost(vmi)
+		socketFile, err = cmdclient.FindSocket(vmi)
 		// no socket file, no VMI, so it's unresponsive
 		if err != nil {
 			// socket does not exist, but let's see if the pod is still there
-			if _, err = cmdclient.FindPodDirOnHost(vmi); err != nil {
+			if _, err = cmdclient.FindPodDirOnHost(vmi, cmdclient.SocketDirectoryOnHost); err != nil {
 				// no pod meanst that waiting for it to initialize makes no sense
 				return true, true, nil
 			}
@@ -2276,7 +2276,7 @@ func (c *VirtualMachineController) getLauncherClient(vmi *v1.VirtualMachineInsta
 		return clientInfo.Client, nil
 	}
 
-	socketFile, err := cmdclient.FindSocketOnHost(vmi)
+	socketFile, err := cmdclient.FindSocket(vmi)
 	if err != nil {
 		return nil, err
 	}
@@ -3423,7 +3423,6 @@ func (c *VirtualMachineController) calculateVmPhaseForStatusReason(domain *api.D
 			return v1.Failed, nil
 		}
 	} else {
-
 		switch domain.Status.Status {
 		case api.Shutoff, api.Crashed:
 			switch domain.Status.Reason {
@@ -3443,7 +3442,14 @@ func (c *VirtualMachineController) calculateVmPhaseForStatusReason(domain *api.D
 				// if the domain migrated, we no longer know the phase.
 				return vmi.Status.Phase, nil
 			}
-		case api.Running, api.Paused, api.Blocked, api.PMSuspended:
+		case api.Paused:
+			switch domain.Status.Reason {
+			case api.ReasonPausedPostcopyFailed:
+				return v1.Failed, nil
+			default:
+				return v1.Running, nil
+			}
+		case api.Running, api.Blocked, api.PMSuspended:
 			return v1.Running, nil
 		}
 	}
