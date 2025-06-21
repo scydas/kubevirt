@@ -5732,9 +5732,12 @@ var CRDsValidation map[string]string = map[string]string{
                           of a pod.
                         properties:
                           name:
-                            description: Required.
+                            description: |-
+                              Name is this DNS resolver option's name.
+                              Required.
                             type: string
                           value:
+                            description: Value is this DNS resolver option's value.
                             type: string
                         type: object
                       type: array
@@ -6482,6 +6485,16 @@ var CRDsValidation map[string]string = map[string]string{
                             This is helpful for old machines like CentOS6 or RHEL6 which
                             do not understand virtio_non_transitional (virtio 1.0).
                           type: boolean
+                        video:
+                          description: Video describes the video device configuration
+                            for the vmi.
+                          properties:
+                            type:
+                              description: |-
+                                Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                                If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                              type: string
+                          type: object
                         watchdog:
                           description: Watchdog describes a watchdog device which
                             can be added to the vmi.
@@ -6765,6 +6778,11 @@ var CRDsValidation map[string]string = map[string]string{
                         acpi:
                           description: Information that can be set in the ACPI table
                           properties:
+                            msdmNameRef:
+                              description: |-
+                                Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                                The above points to the spec of MSDM too.
+                              type: string
                             slicNameRef:
                               description: |-
                                 SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -6978,7 +6996,7 @@ var CRDsValidation map[string]string = map[string]string{
                     - "None": No action will be taken, according to the specified 'RunStrategy' the VirtualMachine will be restarted or shutdown.
                     - "LiveMigrate": the VirtualMachineInstance will be migrated instead of being shutdown.
                     - "LiveMigrateIfPossible": the same as "LiveMigrate" but only if the VirtualMachine is Live-Migratable, otherwise it will behave as "None".
-                    - "External": the VirtualMachineInstance will be protected by a PDB and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
+                    - "External": the VirtualMachineInstance will be protected and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
                   type: string
                 hostname:
                   description: |-
@@ -11060,9 +11078,12 @@ var CRDsValidation map[string]string = map[string]string{
                   pod.
                 properties:
                   name:
-                    description: Required.
+                    description: |-
+                      Name is this DNS resolver option's name.
+                      Required.
                     type: string
                   value:
+                    description: Value is this DNS resolver option's value.
                     type: string
                 type: object
               type: array
@@ -11798,6 +11819,16 @@ var CRDsValidation map[string]string = map[string]string{
                     This is helpful for old machines like CentOS6 or RHEL6 which
                     do not understand virtio_non_transitional (virtio 1.0).
                   type: boolean
+                video:
+                  description: Video describes the video device configuration for
+                    the vmi.
+                  properties:
+                    type:
+                      description: |-
+                        Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                        If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                      type: string
+                  type: object
                 watchdog:
                   description: Watchdog describes a watchdog device which can be added
                     to the vmi.
@@ -12078,6 +12109,11 @@ var CRDsValidation map[string]string = map[string]string{
                 acpi:
                   description: Information that can be set in the ACPI table
                   properties:
+                    msdmNameRef:
+                      description: |-
+                        Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                        The above points to the spec of MSDM too.
+                      type: string
                     slicNameRef:
                       description: |-
                         SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -12286,7 +12322,7 @@ var CRDsValidation map[string]string = map[string]string{
             - "None": No action will be taken, according to the specified 'RunStrategy' the VirtualMachine will be restarted or shutdown.
             - "LiveMigrate": the VirtualMachineInstance will be migrated instead of being shutdown.
             - "LiveMigrateIfPossible": the same as "LiveMigrate" but only if the VirtualMachine is Live-Migratable, otherwise it will behave as "None".
-            - "External": the VirtualMachineInstance will be protected by a PDB and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
+            - "External": the VirtualMachineInstance will be protected and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
           type: string
         hostname:
           description: |-
@@ -15260,6 +15296,16 @@ var CRDsValidation map[string]string = map[string]string{
                     This is helpful for old machines like CentOS6 or RHEL6 which
                     do not understand virtio_non_transitional (virtio 1.0).
                   type: boolean
+                video:
+                  description: Video describes the video device configuration for
+                    the vmi.
+                  properties:
+                    type:
+                      description: |-
+                        Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                        If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                      type: string
+                  type: object
                 watchdog:
                   description: Watchdog describes a watchdog device which can be added
                     to the vmi.
@@ -15540,6 +15586,11 @@ var CRDsValidation map[string]string = map[string]string{
                 acpi:
                   description: Information that can be set in the ACPI table
                   properties:
+                    msdmNameRef:
+                      description: |-
+                        Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                        The above points to the spec of MSDM too.
+                      type: string
                     slicNameRef:
                       description: |-
                         SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -16948,9 +16999,12 @@ var CRDsValidation map[string]string = map[string]string{
                           of a pod.
                         properties:
                           name:
-                            description: Required.
+                            description: |-
+                              Name is this DNS resolver option's name.
+                              Required.
                             type: string
                           value:
+                            description: Value is this DNS resolver option's value.
                             type: string
                         type: object
                       type: array
@@ -17698,6 +17752,16 @@ var CRDsValidation map[string]string = map[string]string{
                             This is helpful for old machines like CentOS6 or RHEL6 which
                             do not understand virtio_non_transitional (virtio 1.0).
                           type: boolean
+                        video:
+                          description: Video describes the video device configuration
+                            for the vmi.
+                          properties:
+                            type:
+                              description: |-
+                                Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                                If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                              type: string
+                          type: object
                         watchdog:
                           description: Watchdog describes a watchdog device which
                             can be added to the vmi.
@@ -17981,6 +18045,11 @@ var CRDsValidation map[string]string = map[string]string{
                         acpi:
                           description: Information that can be set in the ACPI table
                           properties:
+                            msdmNameRef:
+                              description: |-
+                                Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                                The above points to the spec of MSDM too.
+                              type: string
                             slicNameRef:
                               description: |-
                                 SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -18194,7 +18263,7 @@ var CRDsValidation map[string]string = map[string]string{
                     - "None": No action will be taken, according to the specified 'RunStrategy' the VirtualMachine will be restarted or shutdown.
                     - "LiveMigrate": the VirtualMachineInstance will be migrated instead of being shutdown.
                     - "LiveMigrateIfPossible": the same as "LiveMigrate" but only if the VirtualMachine is Live-Migratable, otherwise it will behave as "None".
-                    - "External": the VirtualMachineInstance will be protected by a PDB and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
+                    - "External": the VirtualMachineInstance will be protected and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
                   type: string
                 hostname:
                   description: |-
@@ -19584,6 +19653,28 @@ var CRDsValidation map[string]string = map[string]string{
             zero and not specified. Defaults to 1.
           format: int32
           type: integer
+        scaleInStrategy:
+          description: ScaleInStrategy specifies how the VMPool controller manages
+            scaling in VMs within a VMPool
+          properties:
+            proactive:
+              description: Proactive scale-in by forcing VMs to shutdown during scale-in
+                (Default)
+              properties:
+                selectionPolicy:
+                  description: |-
+                    SelectionPolicy defines the priority in which VM instances are selected for proactive scale-in
+                    Defaults to "Random" base policy when no SelectionPolicy is configured
+                  properties:
+                    basePolicy:
+                      description: BasePolicy is a catch-all policy [Random|DescendingOrder]
+                      enum:
+                      - Random
+                      - DescendingOrder
+                      type: string
+                  type: object
+              type: object
+          type: object
         selector:
           description: |-
             Label selector for pods. Existing Poolss whose pods are
@@ -21454,9 +21545,13 @@ var CRDsValidation map[string]string = map[string]string{
                                   options of a pod.
                                 properties:
                                   name:
-                                    description: Required.
+                                    description: |-
+                                      Name is this DNS resolver option's name.
+                                      Required.
                                     type: string
                                   value:
+                                    description: Value is this DNS resolver option's
+                                      value.
                                     type: string
                                 type: object
                               type: array
@@ -22225,6 +22320,16 @@ var CRDsValidation map[string]string = map[string]string{
                                     This is helpful for old machines like CentOS6 or RHEL6 which
                                     do not understand virtio_non_transitional (virtio 1.0).
                                   type: boolean
+                                video:
+                                  description: Video describes the video device configuration
+                                    for the vmi.
+                                  properties:
+                                    type:
+                                      description: |-
+                                        Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                                        If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                                      type: string
+                                  type: object
                                 watchdog:
                                   description: Watchdog describes a watchdog device
                                     which can be added to the vmi.
@@ -22509,6 +22614,11 @@ var CRDsValidation map[string]string = map[string]string{
                                   description: Information that can be set in the
                                     ACPI table
                                   properties:
+                                    msdmNameRef:
+                                      description: |-
+                                        Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                                        The above points to the spec of MSDM too.
+                                      type: string
                                     slicNameRef:
                                       description: |-
                                         SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -22730,7 +22840,7 @@ var CRDsValidation map[string]string = map[string]string{
                             - "None": No action will be taken, according to the specified 'RunStrategy' the VirtualMachine will be restarted or shutdown.
                             - "LiveMigrate": the VirtualMachineInstance will be migrated instead of being shutdown.
                             - "LiveMigrateIfPossible": the same as "LiveMigrate" but only if the VirtualMachine is Live-Migratable, otherwise it will behave as "None".
-                            - "External": the VirtualMachineInstance will be protected by a PDB and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
+                            - "External": the VirtualMachineInstance will be protected and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
                           type: string
                         hostname:
                           description: |-
@@ -24531,7 +24641,8 @@ var CRDsValidation map[string]string = map[string]string{
     metadata:
       type: object
     spec:
-      description: VirtualMachineRestoreSpec is the spec for a VirtualMachineRestoreresource
+      description: VirtualMachineRestoreSpec is the spec for a VirtualMachineRestore
+        resource
       properties:
         patches:
           description: |-
@@ -24570,12 +24681,40 @@ var CRDsValidation map[string]string = map[string]string{
           type: string
         virtualMachineSnapshotName:
           type: string
+        volumeRestoreOverrides:
+          description: |-
+            VolumeRestoreOverrides gives the option to change properties of each restored volume
+            For example, specifying the name of the restored volume, or adding labels/annotations to it
+          items:
+            description: VolumeRestoreOverride specifies how a volume should be restored
+              from a VirtualMachineSnapshot
+            properties:
+              annotations:
+                additionalProperties:
+                  type: string
+                type: object
+              labels:
+                additionalProperties:
+                  type: string
+                type: object
+              restoreName:
+                type: string
+              volumeName:
+                type: string
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        volumeRestorePolicy:
+          description: VolumeRestorePolicy defines how to handle the restore of snapshotted
+            volumes
+          type: string
       required:
       - target
       - virtualMachineSnapshotName
       type: object
     status:
-      description: VirtualMachineRestoreStatus is the spec for a VirtualMachineRestoreresource
+      description: VirtualMachineRestoreStatus is the status for a VirtualMachineRestore
+        resource
       properties:
         complete:
           type: boolean
@@ -24616,7 +24755,7 @@ var CRDsValidation map[string]string = map[string]string{
           type: string
         restores:
           items:
-            description: VolumeRestore contains the data neeed to restore a PVC
+            description: VolumeRestore contains the data needed to restore a PVC
             properties:
               dataVolumeName:
                 type: string
@@ -26659,9 +26798,13 @@ var CRDsValidation map[string]string = map[string]string{
                                       options of a pod.
                                     properties:
                                       name:
-                                        description: Required.
+                                        description: |-
+                                          Name is this DNS resolver option's name.
+                                          Required.
                                         type: string
                                       value:
+                                        description: Value is this DNS resolver option's
+                                          value.
                                         type: string
                                     type: object
                                   type: array
@@ -27440,6 +27583,16 @@ var CRDsValidation map[string]string = map[string]string{
                                         This is helpful for old machines like CentOS6 or RHEL6 which
                                         do not understand virtio_non_transitional (virtio 1.0).
                                       type: boolean
+                                    video:
+                                      description: Video describes the video device
+                                        configuration for the vmi.
+                                      properties:
+                                        type:
+                                          description: |-
+                                            Type specifies the video device type (e.g., virtio, vga, bochs, ramfb).
+                                            If not specified, the default is architecture-dependent (VGA for BIOS-based VMs, Bochs for EFI-based VMs on AMD64; virtio for Arm and s390x).
+                                          type: string
+                                      type: object
                                     watchdog:
                                       description: Watchdog describes a watchdog device
                                         which can be added to the vmi.
@@ -27724,6 +27877,11 @@ var CRDsValidation map[string]string = map[string]string{
                                       description: Information that can be set in
                                         the ACPI table
                                       properties:
+                                        msdmNameRef:
+                                          description: |-
+                                            Similar to SlicNameRef, another ACPI entry that is used in more recent Windows versions.
+                                            The above points to the spec of MSDM too.
+                                          type: string
                                         slicNameRef:
                                           description: |-
                                             SlicNameRef should match the volume name of a secret object. The data in the secret should
@@ -27946,7 +28104,7 @@ var CRDsValidation map[string]string = map[string]string{
                                 - "None": No action will be taken, according to the specified 'RunStrategy' the VirtualMachine will be restarted or shutdown.
                                 - "LiveMigrate": the VirtualMachineInstance will be migrated instead of being shutdown.
                                 - "LiveMigrateIfPossible": the same as "LiveMigrate" but only if the VirtualMachine is Live-Migratable, otherwise it will behave as "None".
-                                - "External": the VirtualMachineInstance will be protected by a PDB and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
+                                - "External": the VirtualMachineInstance will be protected and 'vmi.Status.EvacuationNodeName' will be set on eviction. This is mainly useful for cluster-api-provider-kubevirt (capk) which needs a way for VMI's to be blocked from eviction, yet signal capk that eviction has been called on the VMI so the capk controller can handle tearing the VMI down. Details can be found in the commit description https://github.com/kubevirt/kubevirt/commit/c1d77face705c8b126696bac9a3ee3825f27f1fa.
                               type: string
                             hostname:
                               description: |-
