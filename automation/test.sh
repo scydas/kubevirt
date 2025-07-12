@@ -62,6 +62,7 @@ if [[ $TARGET =~ windows.* ]]; then
   echo "picking the default provider for windows tests"
 elif [[ $TARGET =~ sig-network ]]; then
   export KUBEVIRT_WITH_MULTUS_V3="${KUBEVIRT_WITH_MULTUS_V3:-true}"
+  export KUBEVIRT_WITH_DYN_NET_CTRL="${KUBEVIRT_WITH_DYN_NET_CTRL:-false}"
   export KUBEVIRT_NUM_NODES=3
   export KUBEVIRT_WITH_CNAO=true
   export KUBEVIRT_DEPLOY_NET_BINDING_CNI=true
@@ -106,6 +107,8 @@ elif [[ $TARGET =~ wg-s390x ]]; then
     export KUBEVIRT_PROVIDER=${TARGET/-wg-s390x}
 elif [[ $TARGET =~ wg-arm64 ]]; then
     export KUBEVIRT_PROVIDER=${TARGET/-wg-arm64}
+elif [[ $TARGET =~ sev ]]; then
+    export KUBEVIRT_PROVIDER=${TARGET/-sev}
 else
   export KUBEVIRT_PROVIDER=${TARGET}
 fi
@@ -125,6 +128,7 @@ if [[ $TARGET =~ sriov.* ]]; then
     export KUBEVIRT_NUM_NODES=3
   fi
   export KUBEVIRT_DEPLOY_CDI="false"
+  export KUBEVIRT_VERBOSITY=${KUBEVIRT_VERBOSITY:-"virtLauncher:3,virtHandler:3"}
 elif [[ $TARGET =~ vgpu.* ]]; then
   export KUBEVIRT_NUM_NODES=1
 else
@@ -422,10 +426,10 @@ if [[ -z ${KUBEVIRT_E2E_FOCUS} && -z ${KUBEVIRT_E2E_SKIP} && -z ${label_filter} 
     label_filter='(sig-network,netCustomBindingPlugins)'
     # SR-IOV tests runs on dedicated lane (matching the pattern: *kind-sriov*)
     add_to_label_filter "(!SRIOV)" "&&"
-    if [[ $KUBEVIRT_WITH_MULTUS_V3 == "true" ]]; then
-      add_to_label_filter "(!in-place-hotplug-NICs)" "&&"
-    else
+    if [[ $KUBEVIRT_WITH_DYN_NET_CTRL == "true" ]]; then
       add_to_label_filter "(!migration-based-hotplug-NICs)" "&&"
+    else
+      add_to_label_filter "(!in-place-hotplug-NICs)" "&&"
     fi
   elif [[ $TARGET =~ sig-storage ]]; then
     label_filter='(sig-storage)'
@@ -435,6 +439,8 @@ if [[ -z ${KUBEVIRT_E2E_FOCUS} && -z ${KUBEVIRT_E2E_SKIP} && -z ${label_filter} 
     label_filter='(wg-arm64 && !(ACPI,requires-two-schedulable-nodes,cpumodel))'
   elif [[ $TARGET =~ vgpu.* ]]; then
     label_filter='(VGPU)'
+  elif [[ $TARGET =~ sev.* ]]; then
+    label_filter='(SEV)'
   elif [[ $TARGET =~ sig-compute-realtime ]]; then
     label_filter='(sig-compute-realtime) && !(SEV, SEVES)'
   elif [[ $TARGET =~ sig-compute-migrations ]]; then

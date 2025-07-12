@@ -189,7 +189,7 @@ var _ = Describe("[rfe_id:273][crit:high][vendor:cnv-qe@redhat.com][level:compon
 		})
 
 		DescribeTable("log libvirtd debug logs should be", func(vmiLabels, vmiAnnotations map[string]string, expectDebugLogs bool) {
-			options := []libvmi.Option{libvmi.WithResourceMemory("32Mi")}
+			options := []libvmi.Option{libvmi.WithMemoryRequest("32Mi")}
 			for k, v := range vmiLabels {
 				options = append(options, libvmi.WithLabel(k, v))
 			}
@@ -301,7 +301,7 @@ var _ = Describe("[rfe_id:273][crit:high][vendor:cnv-qe@redhat.com][level:compon
 		Context("with boot order", func() {
 			DescribeTable("[rfe_id:273][crit:high][vendor:cnv-qe@redhat.com][level:component]should be able to boot from selected disk", func(disk1, disk2 libvmi.Option, expectedConsoleText string) {
 				By("defining a VirtualMachineInstance with an Alpine disk")
-				vmi := libvmi.New(disk1, disk2, libvmi.WithResourceMemory("256Mi"))
+				vmi := libvmi.New(disk1, disk2, libvmi.WithMemoryRequest("256Mi"))
 
 				By("starting VMI")
 				vmi = libvmops.RunVMIAndExpectLaunch(vmi, 2*startupTimeout)
@@ -448,6 +448,37 @@ var _ = Describe("[rfe_id:273][crit:high][vendor:cnv-qe@redhat.com][level:compon
 					Expect(scheduledCond.Reason).To(BeEquivalentTo(k8sv1.PodReasonUnschedulable))
 					Expect(scheduledCond.Message).To(ContainSubstring("node(s) didn't match Pod's node affinity/selector"))
 				})
+			})
+		})
+
+		Context("when guest crashes", Serial, decorators.VMIlifecycle, func() {
+			BeforeEach(func() {
+				kvconfig.EnableFeatureGate(featuregate.PanicDevicesGate)
+			})
+
+			It("should be stopped and have Failed phase when a PanicDevice is provided", func() {
+				vmi := libvmifact.NewFedora(libvmi.WithPanicDevice(v1.Isa))
+				vmi, err := kubevirt.Client().VirtualMachineInstance(testsuite.GetTestNamespace(vmi)).Create(context.Background(), vmi, metav1.CreateOptions{})
+				Expect(err).ToNot(HaveOccurred(), "Should create VMI successfully")
+				libwait.WaitUntilVMIReady(vmi, console.LoginToFedora)
+
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				By("Crashing the vm guest")
+				Expect(console.SafeExpectBatch(vmi, []expect.Batcher{
+					&expect.BSnd{S: "sudo su -\n"},
+					&expect.BExp{R: "#"},
+					&expect.BSnd{S: `echo c > /proc/sysrq-trigger` + "\n"},
+					&expect.BExp{R: "sysrq triggered crash"},
+				}, 10)).To(Succeed())
+
+				By("Waiting for the vm to be stopped")
+				event := watcher.New(vmi).SinceWatchedObjectResourceVersion().Timeout(15*time.Second).WaitFor(ctx, watcher.WarningEvent, v1.Stopped)
+				Expect(event.Message).To(ContainSubstring(`The VirtualMachineInstance crashed`), "VMI should be stopped because of a guest crash")
+
+				By("Checking that VirtualMachineInstance has 'Failed' phase")
+				Eventually(matcher.ThisVMI(vmi)).WithTimeout(10 * time.Second).WithPolling(time.Second).Should(matcher.BeInPhase(v1.Failed))
 			})
 		})
 
@@ -1180,7 +1211,7 @@ var _ = Describe("[rfe_id:273][crit:high][vendor:cnv-qe@redhat.com][level:compon
 
 				By("Creating a VirtualMachineInstance with different namespace")
 				vmi := libvmi.New(
-					libvmi.WithResourceMemory("1Mi"),
+					libvmi.WithMemoryRequest("1Mi"),
 					libvmi.WithNetwork(v1.DefaultPodNetwork()),
 					libvmi.WithInterface(libvmi.InterfaceDeviceWithMasqueradeBinding()),
 				)

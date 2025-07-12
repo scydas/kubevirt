@@ -241,6 +241,7 @@ var _ = Describe("VirtualMachineInstance Mutator", func() {
 						Amd64:   &v1.ArchSpecificConfiguration{MachineType: machineTypeFromConfig},
 						Arm64:   &v1.ArchSpecificConfiguration{MachineType: machineTypeFromConfig},
 						Ppc64le: &v1.ArchSpecificConfiguration{MachineType: machineTypeFromConfig},
+						S390x:   &v1.ArchSpecificConfiguration{MachineType: machineTypeFromConfig},
 					},
 				},
 			},
@@ -252,6 +253,7 @@ var _ = Describe("VirtualMachineInstance Mutator", func() {
 		Expect(*vmiSpec.Domain.Resources.Requests.Cpu()).To(Equal(cpuReq))
 	},
 		Entry("on amd64", "amd64", cpuModelFromConfig),
+		Entry("on s390x", "s390x", cpuModelFromConfig),
 		// Currently only Host-Passthrough is supported on Arm64, so you can only
 		// modify the CPU Model in a VMI yaml file, rather than in cluster config
 		Entry("on arm64", "arm64", v1.CPUModeHostPassthrough),
@@ -716,12 +718,12 @@ var _ = Describe("VirtualMachineInstance Mutator", func() {
 		Expect(vmiSpec.Domain.Memory.Guest.String()).To(Equal("1Gi"))
 	},
 		Entry("when requests are set",
-			libvmi.WithResourceMemory("1Gi")),
+			libvmi.WithMemoryRequest("1Gi")),
 		Entry("when limits are set",
-			libvmi.WithLimitMemory("1Gi")),
+			libvmi.WithMemoryLimit("1Gi")),
 		Entry("when both requests and limits are set",
-			libvmi.WithResourceMemory("1Gi"),
-			libvmi.WithLimitMemory("1Gi"),
+			libvmi.WithMemoryRequest("1Gi"),
+			libvmi.WithMemoryLimit("1Gi"),
 		),
 		Entry("when only hugepages pagesize is set",
 			libvmi.WithHugepages("1Gi")),
